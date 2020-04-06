@@ -1,7 +1,7 @@
 import React from 'react'
 import * as BooksAPI from './BooksAPI'
 import './App.css'
-import {Route, Redirect, withRouter, Link} from 'react-router-dom';
+import {Route, Link} from 'react-router-dom';
 import SearchLibrary from './SearchLibrary';
 import Shelf from './Shelf';
 
@@ -12,9 +12,9 @@ class BooksApp extends React.Component {
     wantToRead: [],
     read: []
   }
-  componentDidMount()
+  reRenderScreen=async ()=>
   {
-    BooksAPI.getAll()
+    await BooksAPI.getAll()
       .then((response)=>this.setState({books:response}))
       .then(()=>{
         this.state.books.forEach((book) => {
@@ -30,27 +30,30 @@ class BooksApp extends React.Component {
           }
         })
       })
-      // .then(()=>console.log(this.state.currentlyReading))
+  }
+
+  componentDidMount()
+  {
+    this.reRenderScreen();
   }
 
   
-  toUpdateShelf=(book, shelf)=>
+  toUpdateShelf=async (book, shelf)=>
   {
-    // let bookToBeUpdated=this.state.books.filter(book=>
-    //   book.id===book.id? book.shelf=shelf: '')
-    // let index=this.state.books.indexOf(bookToBeUpdated)
-    // let updatedBooks=this.state.books.splice(index, 0, bookToBeUpdated)
-    // this.setState({books: updatedBooks})
-    // console.log(this.state.books)
-
-    BooksAPI.update(book, shelf)
+    await BooksAPI.update(book, shelf)
     .then(()=>{
       book.shelf = shelf;
       this.setState(currentState => ({
         books: currentState.books.filter(b => b.id !== book.id).concat([book])
       }));
+      this.setState({
+        currentlyReading: [],
+        wantToRead: [],
+        read: []
+        })
+      
     })
-    // BooksAPI.getAll().then((respons)=>{this.setState({books:respons})})
+    .then(this.reRenderScreen)
   }
 
   render() 
@@ -67,9 +70,6 @@ class BooksApp extends React.Component {
                     <Shelf shelf={this.state.currentlyReading} currentShelf={'currentlyReading'} name={'Currently Reading'} onShelfUpdate={this.toUpdateShelf}/>
                     <Shelf shelf={this.state.wantToRead} currentShelf={'wantToRead'} name={'Want To Read'} onShelfUpdate={this.toUpdateShelf}/>
                     <Shelf shelf={this.state.read} currentShelf={'read'} name={'Read'} onShelfUpdate={this.toUpdateShelf}/>
-                  {/* {this.state.books!==undefined && 
-                      console.log(this.state.books)
-                    } */}
                 </div>
               </div>            
             </div>  
@@ -77,10 +77,9 @@ class BooksApp extends React.Component {
               <button>Add a book</button>
             </Link>            
           </Route>
-          <Route exact path='/search' render={()=><SearchLibrary books={this.state.books}/>}/>
+          <Route exact path='/search' render={()=><SearchLibrary books={this.state.books} onShelfUpdate={this.toUpdateShelf}/>}/>
       </div>
     )
   }
 }
 export default BooksApp
-// export default withRouter(BooksApp)
